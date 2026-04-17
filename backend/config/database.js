@@ -1,18 +1,23 @@
 const mysql = require('mysql2/promise');
 
-// Create connection pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'raghava123',
-  database: process.env.DB_NAME || 'contact_query_system',
-  port: process.env.DB_PORT || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0
-});
+// Support DATABASE_URL for production
+let pool;
+if (process.env.DATABASE_URL) {
+  pool = mysql.createPool(process.env.DATABASE_URL);
+} else {
+  pool = mysql.createPool({
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'raghava123',
+    database: process.env.DB_NAME || 'contact_query_system',
+    port: process.env.DB_PORT || 3306,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
+  });
+}
 
 // Test connection
 (async () => {
