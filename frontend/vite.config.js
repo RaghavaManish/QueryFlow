@@ -7,7 +7,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:5050', // Changed to match backend port
+        target: 'https://queryflowbackend.onrender.com', // Changed to match backend port
         changeOrigin: true,
       }
     }
