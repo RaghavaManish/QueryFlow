@@ -1,0 +1,160 @@
+/* ========================================
+   STATUS BADGE STYLES
+   ======================================== */
+
+/* Status Badges */
+.badge-status-open {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-status-progress {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.badge-status-resolved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-status-closed {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.badge-status-overdue {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-status-escalated {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+/* Priority Badges */
+.badge-priority-low {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-priority-medium {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-priority-high {
+  background: #fed7aa;
+  color: #9a3412;
+}
+
+.badge-priority-urgent {
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 700;
+}
+
+/* Category Badges */
+.badge-category-technical {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.badge-category-billing {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-category-general {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.badge-category-support {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-category-feature {
+  background: #e9d5ff;
+  color: #6b21a8;
+}
+
+.badge-category-bug {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Tag Badges */
+.badge-tag-customer {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-tag-lead {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-tag-vip {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  color: #78350f;
+  font-weight: 700;
+}
+
+.badge-tag-partner {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.badge-tag-inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .badge-status-open {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+[data-theme="dark"] .badge-status-pending {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .badge-status-progress {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+[data-theme="dark"] .badge-status-resolved {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+[data-theme="dark"] .badge-status-closed {
+  background: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .badge-status-overdue {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .badge-priority-urgent {
+  background: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .badge-tag-vip {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.3) 0%, rgba(245, 158, 11, 0.3) 100%);
+  color: #fbbf24;
+}

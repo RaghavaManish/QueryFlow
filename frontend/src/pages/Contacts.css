@@ -1,0 +1,518 @@
+/* ========================================
+   CONTACTS PAGE STYLES
+   ======================================== */
+
+.contact-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.stat-mini {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  transition: all var(--transition-base) ease-in-out;
+}
+
+.stat-mini:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-mini-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--primary-600);
+  margin-bottom: var(--spacing-xs);
+}
+
+.stat-mini-label {
+  font-size: 0.813rem;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+/* ========================================
+   FILTERS
+   ======================================== */
+
+.contacts-filters {
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+  margin-bottom: var(--spacing-xl);
+}
+
+.search-box {
+  position: relative;
+  margin-bottom: var(--spacing-lg);
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 3rem;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-size: 0.938rem;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  transition: all var(--transition-base) ease-in-out;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.tag-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.tag-filter {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-base) ease-in-out;
+}
+
+.tag-filter:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.tag-filter-active {
+  background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+  color: white;
+  border-color: var(--primary-700);
+}
+
+/* ========================================
+   CONTACTS TABLE
+   ======================================== */
+
+.contacts-table-container {
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+}
+
+.contacts-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.contacts-table thead {
+  background: var(--bg-secondary);
+  border-bottom: 2px solid var(--border-light);
+}
+
+.contacts-table th {
+  text-align: left;
+  padding: 1rem 1.5rem;
+  font-size: 0.813rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.contacts-table tbody tr {
+  border-bottom: 1px solid var(--border-light);
+  transition: background var(--transition-base) ease-in-out;
+}
+
+.contacts-table tbody tr:hover {
+  background: var(--bg-secondary);
+}
+
+.contacts-table td {
+  padding: 1rem 1.5rem;
+  font-size: 0.938rem;
+  color: var(--text-primary);
+}
+
+.contact-name-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.contact-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.contact-name {
+  font-weight: 600;
+}
+
+.btn-view {
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--radius-md);
+  font-size: 0.813rem;
+  font-weight: 600;
+  color: var(--primary-600);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-base) ease-in-out;
+}
+
+.btn-view:hover {
+  background: var(--primary-50);
+  color: var(--primary-700);
+}
+
+/* ========================================
+   DETAIL PANEL
+   ======================================== */
+
+.detail-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 100%;
+  max-width: 400px;
+  height: 100vh;
+  background: var(--surface);
+  box-shadow: var(--shadow-2xl);
+  z-index: 1001;
+  overflow-y: auto;
+}
+
+.detail-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-xl);
+  border-bottom: 1px solid var(--border-light);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+
+.detail-panel-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.detail-panel-close {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-base) ease-in-out;
+}
+
+.detail-panel-close:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.detail-panel-content {
+  padding: var(--spacing-xl);
+}
+
+.contact-profile {
+  text-align: center;
+  padding: var(--spacing-xl) 0;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: var(--spacing-xl);
+}
+
+.contact-avatar-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 1.5rem;
+  margin: 0 auto var(--spacing-md);
+}
+
+.contact-detail-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.contact-info-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.938rem;
+}
+
+.contact-info-item svg {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.panel-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  animation: fadeIn var(--transition-base) ease-in-out;
+}
+
+/* ========================================
+   RESPONSIVE STYLES
+   ======================================== */
+
+@media (max-width: 1024px) {
+  .contacts-table-container {
+    overflow-x: auto;
+  }
+
+  .contacts-table {
+    min-width: 800px;
+  }
+}
+
+@media (max-width: 768px) {
+  .contact-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .detail-panel {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .contact-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .tag-filters {
+    gap: var(--spacing-xs);
+  }
+
+  .tag-filter {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.813rem;
+  }
+}
+
+/* ========================================
+   ADD CONTACT MODAL
+   ======================================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.6); /* adapts well to dark/light */
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  animation: fadeIn var(--transition-base) ease-in-out;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-2xl);
+  border: 1px solid var(--border-light);
+  z-index: 1001;
+  padding: 0;
+  animation: scaleIn var(--transition-base) ease-in-out;
+}
+
+/* Header */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+}
+
+.modal-close:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Form */
+.modal-form {
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: all var(--transition-base);
+  outline: none;
+}
+
+.form-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.form-input:focus,
+.form-select:focus {
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* Actions */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.btn-btn-secondary {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.6) var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+/* Animations */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -55%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ========================================
+   RESPONSIVE MODAL
+   ======================================== */
+
+@media (max-width: 480px) {
+  .modal {
+    max-width: 95%;
+  }
+
+  .modal-form {
+    padding: var(--spacing-lg);
+  }
+}
