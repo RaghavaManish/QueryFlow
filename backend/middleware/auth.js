@@ -23,10 +23,11 @@ exports.protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // Get user from database
-      const [users] = await db.query(
-        'SELECT id, name, email, role FROM users WHERE id = ? AND is_active = TRUE',
+      const usersResult = await db.query(
+        'SELECT id, name, email, role FROM users WHERE id = $1 AND is_active = TRUE',
         [decoded.id]
       );
+      const users = usersResult.rows;
 
       if (users.length === 0) {
         return res.status(401).json({
