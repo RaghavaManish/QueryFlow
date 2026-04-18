@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // ✅ ADDED
 import api from '../utils/api';
 import Sidebar from '../components/Sidebar';
 import StatusBadge from '../components/StatusBadge';
@@ -14,20 +15,25 @@ import {
 import './Dashboard.css';
 
 const Dashboard = () => {
+  const { user, loading: authLoading } = useAuth(); // ✅ ADDED
+
   const [stats, setStats] = useState(null);
   const [recentQueries, setRecentQueries] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // ✅ FIX: wait for auth before calling API
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    if (!authLoading && user) {
+      loadDashboardData();
+    }
+  }, [authLoading, user]);
 
   const loadDashboardData = async () => {
     try {
       const res = await api.get('/analytics/dashboard');
       const data = res.data.data;
       setStats({
-        totalQueries: data.kpis.open_queries + data.kpis.resolved_today, // or use another field if needed
+        totalQueries: data.kpis.open_queries + data.kpis.resolved_today,
         totalContacts: data.kpis.total_contacts,
         pendingQueries: data.kpis.open_queries,
         resolvedToday: data.kpis.resolved_today
@@ -71,7 +77,8 @@ const Dashboard = () => {
     }
   ];
 
-  if (loading) {
+  // ✅ FIX: wait for BOTH auth + data
+  if (authLoading || loading) {
     return (
       <div className="dashboard-layout">
         <Sidebar />
@@ -183,6 +190,7 @@ const Dashboard = () => {
               </button>
             </div>
           </div>
+
         </div>
       </main>
     </div>
