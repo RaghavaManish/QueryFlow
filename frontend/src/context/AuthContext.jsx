@@ -6,7 +6,7 @@ const AuthContext = createContext();
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth must be used within AuthProvider');
   }
   return context;
 };
@@ -16,7 +16,6 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(!!token);
 
-  // 🔥 Load user when token exists
   useEffect(() => {
     if (token) {
       loadUser();
@@ -27,10 +26,10 @@ export const AuthProvider = ({ children }) => {
 
   const loadUser = async () => {
     try {
-      const response = await api.get('/auth/me');
-      setUser(response.data.user);
-    } catch (error) {
-      console.error('Failed to load user:', error?.response || error.message);
+      const res = await api.get('/auth/me');
+      setUser(res.data.user);
+    } catch (err) {
+      console.error('Auth load failed:', err?.response || err.message);
       logout();
     } finally {
       setLoading(false);
@@ -39,46 +38,46 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await api.post('/auth/login', { email, password });
-      const { token, user } = response.data;
+      const res = await api.post('/auth/login', { email, password });
+      const { token, user } = res.data;
 
       localStorage.setItem('token', token);
       setToken(token);
       setUser(user);
 
       return { success: true };
-    } catch (error) {
+    } catch (err) {
       return {
         success: false,
         message:
-          error.response?.data?.message ||
-          'Login failed. Please check your credentials.',
+          err.response?.data?.message ||
+          'Login failed. Please check credentials.',
       };
     }
   };
 
   const register = async (name, email, password, role = 'agent') => {
     try {
-      const response = await api.post('/auth/register', {
+      const res = await api.post('/auth/register', {
         name,
         email,
         password,
         role,
       });
 
-      const { token, user } = response.data;
+      const { token, user } = res.data;
 
       localStorage.setItem('token', token);
       setToken(token);
       setUser(user);
 
       return { success: true };
-    } catch (error) {
+    } catch (err) {
       return {
         success: false,
         message:
-          error.response?.data?.message ||
-          'Registration failed. Please try again.',
+          err.response?.data?.message ||
+          'Registration failed.',
       };
     }
   };
@@ -89,18 +88,19 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const value = useMemo(
-    () => ({
-      user,
-      token,
-      loading,
-      login,
-      register,
-      logout,
-      isAuthenticated: !!user, // ✅ FIXED
-    }),
-    [user, token, loading]
-  );
+  const value = useMemo(() => ({
+    user,
+    token,
+    loading,
+    login,
+    register,
+    logout,
+    isAuthenticated: !!user,
+  }), [user, token, loading]);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
