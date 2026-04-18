@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import api from '../utils/api';
 import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 import StatusBadge from '../components/StatusBadge';
@@ -41,14 +42,14 @@ const Queries = () => {
 
   // Load contacts for dropdown
   useEffect(() => {
-    axios.get('/api/contacts').then(res => {
+    api.get('/contacts').then(res => {
       setContacts(res.data.data || []);
     });
   }, []);
 
   const loadQueries = async () => {
     try {
-      const response = await axios.get('/api/queries');
+      const response = await api.get('/queries');
       setQueries(response.data.data || []);
       setStats(response.data.stats);
     } catch (error) {
@@ -110,7 +111,7 @@ const Queries = () => {
 
   const handleResolveQuery = async () => {
     try {
-      await axios.put(`/api/queries/${selectedQuery.id}/resolve`, {
+      await api.put(`/queries/${selectedQuery.id}/resolve`, {
         resolution_notes: 'Resolved'
       });
       setShowDetailPanel(false);
@@ -193,7 +194,7 @@ const Queries = () => {
       return;
     }
     try {
-      await axios.post('/api/queries', {
+      await api.post('/queries', {
         contact_id: newQueryForm.contact_id,
         subject: newQueryForm.subject,
         description: newQueryForm.description,

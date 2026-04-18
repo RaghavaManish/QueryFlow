@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/api';
 import Sidebar from '../components/Sidebar';
 import StatusBadge from '../components/StatusBadge';
 import { 
@@ -24,7 +24,7 @@ const Dashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      const res = await axios.get('/api/analytics/dashboard');
+      const res = await api.get('/analytics/dashboard');
       const data = res.data.data;
       setStats({
         totalQueries: data.kpis.open_queries + data.kpis.resolved_today, // or use another field if needed

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import Sidebar from '../components/Sidebar';
 import StatusBadge from '../components/StatusBadge';
 import { Search, Plus, X, Mail, Phone, Building, User } from 'lucide-react';
@@ -37,7 +37,7 @@ const Contacts = () => {
 
   const loadContacts = async () => {
     try {
-      const response = await axios.get('/api/contacts');
+      const response = await api.get('/contacts');
       setContacts(response.data.data || []);
       setStats(response.data.stats);
     } catch (error) {
@@ -110,7 +110,7 @@ const Contacts = () => {
 
     try {
       // Try to submit to API
-      const response = await axios.post('/api/contacts', newContact);
+      const response = await api.post('/contacts', newContact);
       const addedContact = response.data;
       
       // Update contacts list
