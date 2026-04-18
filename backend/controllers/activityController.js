@@ -17,30 +17,31 @@ exports.getActivities = async (req, res, next) => {
       WHERE 1=1
     `;
     const params = [];
+    let paramIdx = 1;
 
     if (query_id) {
-      query += ' AND a.query_id = ?';
+      query += ` AND a.query_id = $${paramIdx++}`;
       params.push(query_id);
     }
 
     if (user_id) {
-      query += ' AND a.user_id = ?';
+      query += ` AND a.user_id = $${paramIdx++}`;
       params.push(user_id);
     }
 
     if (action_type) {
-      query += ' AND a.action_type = ?';
+      query += ` AND a.action_type = $${paramIdx++}`;
       params.push(action_type);
     }
 
-    query += ' ORDER BY a.created_at DESC LIMIT ?';
+    query += ` ORDER BY a.created_at DESC LIMIT $${paramIdx}`;
     params.push(parseInt(limit));
 
-    const [activities] = await db.query(query, params);
+    const activitiesResult = await db.query(query, params);
 
     res.json({
       success: true,
-      data: activities
+      data: activitiesResult.rows
     });
   } catch (error) {
     next(error);

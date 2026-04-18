@@ -1,18 +1,15 @@
 const db = require('../config/database');
 
-// Calculate SLA deadline based on priority
+// Calculate SLA deadline based on priority (Postgres version)
 const calculateSLADeadline = async (priority) => {
-  const [slaConfig] = await db.query(
-    'SELECT resolution_time_hours FROM sla_configs WHERE priority = ?',
+  const result = await db.query(
+    'SELECT resolution_time_hours FROM sla_configs WHERE priority = $1',
     [priority]
   );
-
-  if (slaConfig.length === 0) {
-    // Default to 24 hours if not configured
+  if (result.rows.length === 0) {
     return new Date(Date.now() + 24 * 60 * 60 * 1000);
   }
-
-  const hours = slaConfig[0].resolution_time_hours;
+  const hours = result.rows[0].resolution_time_hours;
   return new Date(Date.now() + hours * 60 * 60 * 1000);
 };
 
@@ -21,36 +18,26 @@ const calculateSLADeadline = async (priority) => {
 // @access  Private
 exports.getQueries = async (req, res, next) => {
   try {
-    const { 
-      search, 
-      status, 
-      category, 
-      priority, 
-      assigned_to, 
-      page = 1, 
-      limit = 10, 
-      sortBy = 'created_at', 
-      order = 'DESC' 
-    } = req.query;
-
+    const { search, status, category, priority, assigned_to, page = 1, limit = 10, sortBy = 'created_at', order = 'DESC' } = req.query;
     let query = `
       SELECT q.*, 
              c.name as contact_name, 
              c.email as contact_email,
              u.name as assigned_to_name,
-             TIMESTAMPDIFF(HOUR, NOW(), q.sla_deadline) as hours_remaining
+             EXTRACT(EPOCH FROM (q.sla_deadline - NOW()))/3600 as hours_remaining
       FROM queries q
       JOIN contacts c ON q.contact_id = c.id
       LEFT JOIN users u ON q.assigned_to = u.id
       WHERE 1=1
     `;
     const params = [];
-
+    let paramIdx = 1;
     // Apply search filter
     if (search) {
-      query += ' AND (q.subject LIKE ? OR q.description LIKE ? OR c.name LIKE ?)';
+      query += ` AND (q.subject ILIKE $${paramIdx} OR q.description ILIKE $${paramIdx+1} OR c.name ILIKE $${paramIdx+2})`;
       const searchTerm = `%${search}%`;
       params.push(searchTerm, searchTerm, searchTerm);
+      paramIdx += 3;
     }
 
     // Apply status filter
@@ -58,21 +45,24 @@ exports.getQueries = async (req, res, next) => {
       if (status === 'Overdue') {
         query += ' AND q.is_overdue = TRUE';
       } else {
-        query += ' AND q.status = ?';
+        query += ` AND q.status = $${paramIdx}`;
         params.push(status);
+        paramIdx++;
       }
     }
 
     // Apply category filter
     if (category) {
-      query += ' AND q.category = ?';
+      query += ` AND q.category = $${paramIdx}`;
       params.push(category);
+      paramIdx++;
     }
 
     // Apply priority filter
     if (priority) {
-      query += ' AND q.priority = ?';
+      query += ` AND q.priority = $${paramIdx}`;
       params.push(priority);
+      paramIdx++;
     }
 
     // Apply assigned_to filter
@@ -80,27 +70,26 @@ exports.getQueries = async (req, res, next) => {
       if (assigned_to === 'unassigned') {
         query += ' AND q.assigned_to IS NULL';
       } else {
-        query += ' AND q.assigned_to = ?';
+        query += ` AND q.assigned_to = $${paramIdx}`;
         params.push(assigned_to);
+        paramIdx++;
       }
     }
-
     // Get total count
     const countQuery = query.replace(
-      /SELECT q\.\*, .*? FROM/,
+      /SELECT[\s\S]*?FROM/,
       'SELECT COUNT(*) as total FROM'
     );
-    const [countResult] = await db.query(countQuery, params);
-    const total = countResult[0].total;
-
+    const countResult = await db.query(countQuery, params);
+    const total = parseInt(countResult.rows[0].total, 10);
     // Apply sorting and pagination
-    query += ` ORDER BY q.${sortBy} ${order} LIMIT ? OFFSET ?`;
+    query += ` ORDER BY q.${sortBy} ${order} LIMIT $${paramIdx} OFFSET $${paramIdx+1}`;
     params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit));
-
-    const [queries] = await db.query(query, params);
-
+    paramIdx += 2;
+    const queriesResult = await db.query(query, params);
+    const queries = queriesResult.rows;
     // Get query stats
-    const [stats] = await db.query(`
+    const statsResult = await db.query(`
       SELECT 
         COUNT(*) as total,
         SUM(CASE WHEN status = 'Open' THEN 1 ELSE 0 END) as open,
@@ -108,10 +97,10 @@ exports.getQueries = async (req, res, next) => {
         SUM(CASE WHEN status IN ('Open', 'Pending', 'In Progress') THEN 1 ELSE 0 END) as active,
         SUM(CASE WHEN is_overdue = TRUE THEN 1 ELSE 0 END) as overdue,
         SUM(CASE WHEN status = 'Escalated' THEN 1 ELSE 0 END) as escalated,
-        SUM(CASE WHEN status = 'Resolved' AND DATE(resolved_at) = CURDATE() THEN 1 ELSE 0 END) as resolved_today
+        SUM(CASE WHEN status = 'Resolved' AND DATE(resolved_at) = CURRENT_DATE THEN 1 ELSE 0 END) as resolved_today
       FROM queries
     `);
-
+    const stats = statsResult.rows[0];
     res.json({
       success: true,
       data: queries,
@@ -121,7 +110,7 @@ exports.getQueries = async (req, res, next) => {
         total,
         pages: Math.ceil(total / parseInt(limit))
       },
-      stats: stats[0]
+      stats
     });
   } catch (error) {
     next(error);
@@ -135,21 +124,22 @@ exports.getQuery = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const [queries] = await db.query(
+    const queriesResult = await db.query(
       `SELECT q.*, 
               c.name as contact_name, 
               c.email as contact_email, 
               c.phone as contact_phone,
               u.name as assigned_to_name,
               creator.name as created_by_name,
-              TIMESTAMPDIFF(HOUR, NOW(), q.sla_deadline) as hours_remaining
+              EXTRACT(EPOCH FROM (q.sla_deadline - NOW()))/3600 as hours_remaining
        FROM queries q
        JOIN contacts c ON q.contact_id = c.id
        LEFT JOIN users u ON q.assigned_to = u.id
        LEFT JOIN users creator ON q.created_by = creator.id
-       WHERE q.id = ?`,
+       WHERE q.id = $1`,
       [id]
     );
+    const queries = queriesResult.rows;
 
     if (queries.length === 0) {
       return res.status(404).json({
@@ -159,24 +149,26 @@ exports.getQuery = async (req, res, next) => {
     }
 
     // Get activity logs
-    const [activities] = await db.query(
+    const activitiesResult = await db.query(
       `SELECT a.*, u.name as user_name 
        FROM activity_logs a 
        LEFT JOIN users u ON a.user_id = u.id 
-       WHERE a.query_id = ? 
+       WHERE a.query_id = $1 
        ORDER BY a.created_at DESC`,
       [id]
     );
+    const activities = activitiesResult.rows;
 
     // Get notes
-    const [notes] = await db.query(
+    const notesResult = await db.query(
       `SELECT n.*, u.name as user_name 
        FROM internal_notes n 
        JOIN users u ON n.user_id = u.id 
-       WHERE n.query_id = ? 
+       WHERE n.query_id = $1 
        ORDER BY n.created_at DESC`,
       [id]
     );
+    const notes = notesResult.rows;
 
     res.json({
       success: true,
@@ -208,10 +200,10 @@ exports.createQuery = async (req, res, next) => {
     // Calculate SLA deadline
     const slaDeadline = await calculateSLADeadline(priority || 'Medium');
 
-    const [result] = await db.query(
+    const result = await db.query(
       `INSERT INTO queries 
        (contact_id, subject, description, category, priority, assigned_to, sla_deadline, created_by) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
       [
         contact_id, 
         subject, 
@@ -228,7 +220,7 @@ exports.createQuery = async (req, res, next) => {
       success: true,
       message: 'Query created successfully',
       data: {
-        id: result.insertId,
+        id: result.rows[0].id,
         subject,
         status: 'Open',
         sla_deadline: slaDeadline
@@ -248,7 +240,8 @@ exports.updateQuery = async (req, res, next) => {
     const { subject, description, category, priority, status } = req.body;
 
     // Get current query
-    const [currentQuery] = await db.query('SELECT * FROM queries WHERE id = ?', [id]);
+    const currentQueryResult = await db.query('SELECT * FROM queries WHERE id = $1', [id]);
+    const currentQuery = currentQueryResult.rows;
 
     if (currentQuery.length === 0) {
       return res.status(404).json({
@@ -265,8 +258,8 @@ exports.updateQuery = async (req, res, next) => {
 
     await db.query(
       `UPDATE queries 
-       SET subject = ?, description = ?, category = ?, priority = ?, status = ?, sla_deadline = ?
-       WHERE id = ?`,
+       SET subject = $1, description = $2, category = $3, priority = $4, status = $5, sla_deadline = $6
+       WHERE id = $7`,
       [subject, description, category, priority, status, slaDeadline, id]
     );
 
@@ -287,12 +280,12 @@ exports.assignQuery = async (req, res, next) => {
     const { id } = req.params;
     const { assigned_to } = req.body;
 
-    const [result] = await db.query(
-      'UPDATE queries SET assigned_to = ? WHERE id = ?',
+    const result = await db.query(
+      'UPDATE queries SET assigned_to = $1 WHERE id = $2 RETURNING id',
       [assigned_to, id]
     );
 
-    if (result.affectedRows === 0) {
+    if (result.rowCount === 0) {
       return res.status(404).json({
         success: false,
         message: 'Query not found'
@@ -302,7 +295,7 @@ exports.assignQuery = async (req, res, next) => {
     // Log the assignment
     await db.query(
       `INSERT INTO activity_logs (query_id, user_id, action_type, description, new_value) 
-       VALUES (?, ?, 'assigned', 'Query reassigned', ?)`,
+       VALUES ($1, $2, 'assigned', 'Query reassigned', $3)`,
       [id, req.user.id, assigned_to]
     );
 
@@ -323,14 +316,14 @@ exports.resolveQuery = async (req, res, next) => {
     const { id } = req.params;
     const { resolution_notes } = req.body;
 
-    const [result] = await db.query(
+    const result = await db.query(
       `UPDATE queries 
-       SET status = 'Resolved', resolved_at = NOW(), resolution_notes = ?
-       WHERE id = ?`,
+       SET status = 'Resolved', resolved_at = NOW(), resolution_notes = $1
+       WHERE id = $2 RETURNING id`,
       [resolution_notes, id]
     );
 
-    if (result.affectedRows === 0) {
+    if (result.rowCount === 0) {
       return res.status(404).json({
         success: false,
         message: 'Query not found'
@@ -340,7 +333,7 @@ exports.resolveQuery = async (req, res, next) => {
     // Log the resolution
     await db.query(
       `INSERT INTO activity_logs (query_id, user_id, action_type, description, new_value) 
-       VALUES (?, ?, 'resolved', 'Query marked as resolved', 'Resolved')`,
+       VALUES ($1, $2, 'resolved', 'Query marked as resolved', 'Resolved')`,
       [id, req.user.id]
     );
 
@@ -368,15 +361,15 @@ exports.addQueryNote = async (req, res, next) => {
       });
     }
 
-    const [result] = await db.query(
-      'INSERT INTO internal_notes (query_id, user_id, note) VALUES (?, ?, ?)',
+    const result = await db.query(
+      'INSERT INTO internal_notes (query_id, user_id, note) VALUES ($1, $2, $3) RETURNING *',
       [id, req.user.id, note]
     );
 
     // Log the note
     await db.query(
       `INSERT INTO activity_logs (query_id, user_id, action_type, description) 
-       VALUES (?, ?, 'note_added', 'Internal note added')`,
+       VALUES ($1, $2, 'note_added', 'Internal note added')`,
       [id, req.user.id]
     );
 
@@ -384,7 +377,7 @@ exports.addQueryNote = async (req, res, next) => {
       success: true,
       message: 'Note added successfully',
       data: {
-        id: result.insertId,
+        id: result.rows[0].id,
         note,
         user_name: req.user.name
       }
@@ -399,7 +392,8 @@ exports.addQueryNote = async (req, res, next) => {
 // @access  Private
 exports.updateSLAStatus = async (req, res, next) => {
   try {
-    await db.query('CALL update_sla_status()');
+    // You may need to implement this as a PostgreSQL function or use raw SQL for batch updates
+    await db.query('SELECT update_sla_status()');
 
     res.json({
       success: true,

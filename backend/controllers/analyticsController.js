@@ -6,33 +6,36 @@ const db = require('../config/database');
 exports.getDashboardStats = async (req, res, next) => {
   try {
     // KPI Cards
-    const [kpis] = await db.query(`
+    const kpisResult = await db.query(`
       SELECT 
         (SELECT COUNT(*) FROM contacts) as total_contacts,
         (SELECT COUNT(*) FROM queries WHERE status IN ('Open', 'Pending', 'In Progress')) as open_queries,
-        (SELECT COUNT(*) FROM queries WHERE status = 'Resolved' AND DATE(resolved_at) = CURDATE()) as resolved_today,
-        (SELECT ROUND(AVG(TIMESTAMPDIFF(HOUR, created_at, resolved_at)), 1) 
-         FROM queries WHERE status = 'Resolved' AND resolved_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as avg_response_time_hours
+        (SELECT COUNT(*) FROM queries WHERE status = 'Resolved' AND DATE(resolved_at) = CURRENT_DATE) as resolved_today,
+        (SELECT ROUND(AVG(EXTRACT(EPOCH FROM (resolved_at - created_at))/3600), 1) 
+         FROM queries WHERE status = 'Resolved' AND resolved_at >= NOW() - INTERVAL '30 days') as avg_response_time_hours
     `);
+    const kpis = kpisResult.rows;
 
     // Query by category
-    const [queryByCategory] = await db.query(`
+    const queryByCategoryResult = await db.query(`
       SELECT category, COUNT(*) as count
       FROM queries
-      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      WHERE created_at >= NOW() - INTERVAL '30 days'
       GROUP BY category
       ORDER BY count DESC
     `);
+    const queryByCategory = queryByCategoryResult.rows;
 
     // Query by status
-    const [queryByStatus] = await db.query(`
+    const queryByStatusResult = await db.query(`
       SELECT status, COUNT(*) as count
       FROM queries
       GROUP BY status
     `);
+    const queryByStatus = queryByStatusResult.rows;
 
     // Recent queries
-    const [recentQueries] = await db.query(`
+    const recentQueriesResult = await db.query(`
       SELECT q.id, q.subject, q.priority, q.status, q.created_at,
              c.name as contact_name,
              u.name as assigned_to_name
@@ -42,9 +45,10 @@ exports.getDashboardStats = async (req, res, next) => {
       ORDER BY q.created_at DESC
       LIMIT 10
     `);
+    const recentQueries = recentQueriesResult.rows;
 
     // Recent activity
-    const [recentActivity] = await db.query(`
+    const recentActivityResult = await db.query(`
       SELECT a.*, u.name as user_name, q.subject as query_subject
       FROM activity_logs a
       LEFT JOIN users u ON a.user_id = u.id
@@ -52,9 +56,10 @@ exports.getDashboardStats = async (req, res, next) => {
       ORDER BY a.created_at DESC
       LIMIT 15
     `);
+    const recentActivity = recentActivityResult.rows;
 
     // Team performance
-    const [teamPerformance] = await db.query(`
+    const teamPerformanceResult = await db.query(`
       SELECT 
         u.id,
         u.name,
@@ -63,7 +68,7 @@ exports.getDashboardStats = async (req, res, next) => {
         SUM(CASE WHEN q.status IN ('Open', 'Pending', 'In Progress') THEN 1 ELSE 0 END) as open_count,
         ROUND(AVG(CASE 
           WHEN q.status = 'Resolved' AND q.resolved_at IS NOT NULL 
-          THEN TIMESTAMPDIFF(HOUR, q.created_at, q.resolved_at) 
+          THEN EXTRACT(EPOCH FROM (q.resolved_at - q.created_at))/3600
           ELSE NULL 
         END), 1) as avg_resolution_hours
       FROM users u
@@ -72,27 +77,30 @@ exports.getDashboardStats = async (req, res, next) => {
       GROUP BY u.id, u.name
       ORDER BY resolved_count DESC
     `);
+    const teamPerformance = teamPerformanceResult.rows;
 
     // Add unassigned queries
-    const [unassigned] = await db.query(`
+    const unassignedResult = await db.query(`
       SELECT 
         'Unassigned' as name,
         COUNT(*) as total_assigned,
         0 as resolved_count,
         COUNT(*) as open_count,
-        NULL as avg_resolution_hours
+        NULL::float as avg_resolution_hours
       FROM queries
       WHERE assigned_to IS NULL
     `);
+    const unassigned = unassignedResult.rows;
 
     // Quick stats
-    const [quickStats] = await db.query(`
+    const quickStatsResult = await db.query(`
       SELECT 
         (SELECT COUNT(*) FROM queries WHERE is_overdue = TRUE) as overdue,
         (SELECT COUNT(*) FROM queries WHERE status = 'Escalated') as escalated,
         (SELECT COUNT(*) FROM queries WHERE sla_breached = TRUE) as sla_breached,
-        (SELECT COUNT(*) FROM queries WHERE status = 'Resolved' AND resolved_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as resolved_this_week
+        (SELECT COUNT(*) FROM queries WHERE status = 'Resolved' AND resolved_at >= NOW() - INTERVAL '7 days') as resolved_this_week
     `);
+    const quickStats = quickStatsResult.rows;
 
     res.json({
       success: true,
@@ -118,35 +126,36 @@ exports.getQueryTrends = async (req, res, next) => {
   try {
     const { period = '7days' } = req.query;
 
-    let dateRange;
+    let interval;
     switch (period) {
       case '24hours':
-        dateRange = 'DATE_SUB(NOW(), INTERVAL 24 HOUR)';
+        interval = "'24 hours'";
         break;
       case '7days':
-        dateRange = 'DATE_SUB(NOW(), INTERVAL 7 DAY)';
+        interval = "'7 days'";
         break;
       case '30days':
-        dateRange = 'DATE_SUB(NOW(), INTERVAL 30 DAY)';
+        interval = "'30 days'";
         break;
       case '90days':
-        dateRange = 'DATE_SUB(NOW(), INTERVAL 90 DAY)';
+        interval = "'90 days'";
         break;
       default:
-        dateRange = 'DATE_SUB(NOW(), INTERVAL 7 DAY)';
+        interval = "'7 days'";
     }
 
-    const [trends] = await db.query(`
+    const trendsResult = await db.query(`
       SELECT 
         DATE(created_at) as date,
         COUNT(*) as total,
         SUM(CASE WHEN status = 'Resolved' THEN 1 ELSE 0 END) as resolved,
         SUM(CASE WHEN status IN ('Open', 'Pending', 'In Progress') THEN 1 ELSE 0 END) as active
       FROM queries
-      WHERE created_at >= ${dateRange}
+      WHERE created_at >= NOW() - INTERVAL ${interval}
       GROUP BY DATE(created_at)
       ORDER BY date ASC
     `);
+    const trends = trendsResult.rows;
 
     res.json({
       success: true,
@@ -162,23 +171,24 @@ exports.getQueryTrends = async (req, res, next) => {
 // @access  Private
 exports.getPerformanceMetrics = async (req, res, next) => {
   try {
-    const [metrics] = await db.query(`
+    const metricsResult = await db.query(`
       SELECT 
         ROUND(AVG(CASE 
           WHEN status = 'Resolved' AND resolved_at IS NOT NULL 
-          THEN TIMESTAMPDIFF(HOUR, created_at, resolved_at) 
+          THEN EXTRACT(EPOCH FROM (resolved_at - created_at))/3600
           ELSE NULL 
         END), 1) as avg_resolution_time,
         ROUND(AVG(CASE 
           WHEN status = 'Resolved' AND resolved_at IS NOT NULL AND sla_breached = FALSE
-          THEN TIMESTAMPDIFF(HOUR, created_at, resolved_at) 
+          THEN EXTRACT(EPOCH FROM (resolved_at - created_at))/3600
           ELSE NULL 
         END), 1) as avg_resolution_time_within_sla,
-        ROUND((SUM(CASE WHEN sla_breached = FALSE THEN 1 ELSE 0 END) / COUNT(*)) * 100, 1) as sla_compliance_rate,
-        ROUND((SUM(CASE WHEN status = 'Resolved' THEN 1 ELSE 0 END) / COUNT(*)) * 100, 1) as resolution_rate
+        ROUND((SUM(CASE WHEN sla_breached = FALSE THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*),0)) * 100, 1) as sla_compliance_rate,
+        ROUND((SUM(CASE WHEN status = 'Resolved' THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*),0)) * 100, 1) as resolution_rate
       FROM queries
-      WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      WHERE created_at >= NOW() - INTERVAL '30 days'
     `);
+    const metrics = metricsResult.rows;
 
     res.json({
       success: true,
