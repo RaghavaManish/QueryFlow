@@ -18,7 +18,9 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'http://localhost:5000',
-    process.env.CLIENT_URL
+    process.env.CLIENT_URL,
+    'https://queryflow-k7a9.onrender.com',
+    'https://queryflowbackend.onrender.com'
   ],
   credentials: true
 }));
