@@ -7,5 +7,7 @@ npm install --legacy-peer-deps
 # Build the frontend
 npm run build
 
-# (Optional) Move build output if needed
-# mv dist/* public/
+# Show output directory for debugging
+ls -l dist
+
+echo "If deploying on Render, set the publish directory to: dist"
